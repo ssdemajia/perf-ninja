@@ -31,7 +31,7 @@
 
 #define UNICODE
 #define _UNICODE
-
+#define NOMINMAX
 #include <windows.h>
 
 #include <Sddl.h>
@@ -148,7 +148,8 @@ inline bool setRequiredPrivileges() {
 }
 
 #endif
-
+#define USE_STD_ALLOCATE 1
+#if USE_STD_ALLOCATE
 // Allocate an array of doubles of size `size`, return it as a
 // std::unique_ptr<double[], D>, where `D` is a custom deleter type
 inline auto allocateDoublesArray(size_t size) {
@@ -167,4 +168,31 @@ inline auto allocateDoublesArray(size_t size) {
   // return std::make_unique<double[]>(size);
   // The more verbose version is meant to demonstrate the use of a custom
   // (potentially stateful) deleter
+
+
 }
+
+#else
+struct Starter
+{
+  Starter()
+  {
+    setRequiredPrivileges();
+  }
+};
+
+static Starter starter;
+inline auto allocateDoublesArray(size_t size) {
+
+  SIZE_T pageSize = GetLargePageMinimum();
+  size_t requireSize = (size_t)(((float)size * sizeof(double) + pageSize - 1.0f) / pageSize) * pageSize;
+  double* p = (double*)VirtualAlloc(NULL, requireSize, MEM_RESERVE | MEM_COMMIT | MEM_LARGE_PAGES, PAGE_READWRITE);
+  if (p == nullptr)
+  {
+    std::cout << "Allocate Failed, because:" << GetLastError() << std::endl;
+  }
+  auto deleter = [/* state = ... */](double* ptr) { VirtualFree(ptr, 0, MEM_RELEASE); };
+
+  return std::unique_ptr<double[], decltype(deleter)>(p, std::move(deleter));
+}
+#endif
