@@ -9,7 +9,7 @@ static int getSumOfDigits(int n) {
   return sum;
 }
 
-#define USE_OLD 0
+#define USE_OLD 1
 
 #if USE_OLD
 int solution(const hash_map_t *hash_map, const std::vector<int> &lookups) {
