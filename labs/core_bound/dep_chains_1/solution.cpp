@@ -22,8 +22,40 @@ unsigned getSumOfDigits(unsigned n) {
 //       Think how you can execute multiple dependency chains in parallel.
 unsigned solution(List *l1, List *l2) {
   unsigned retVal = 0;
-
+  List* head1 = l1;
   List *head2 = l2;
+  int length = 0;
+  while (l1)
+  {
+    length += 1;
+    l1 = l1->next;
+  }
+
+  constexpr int PARALLEL_CHAINS = 8;
+
+  l1 = head1;
+  for (int i = 0; i < length / PARALLEL_CHAINS; i++)
+  {
+    std::array<unsigned, PARALLEL_CHAINS> Cache;
+
+    for (int j = 0; j < PARALLEL_CHAINS; j++)
+    {
+      Cache[j] = l1->value;
+      l1 = l1->next;
+    }
+    l2 = head2;
+    while (l2)
+    {
+      for (int j = 0; j < PARALLEL_CHAINS; j++)
+      {
+        if (l2->value == Cache[j])
+        {
+          retVal += getSumOfDigits(Cache[j]);
+        }
+      }
+      l2 = l2->next;
+    }
+  }
   // O(N^2) algorithm:
   while (l1) {
     unsigned v = l1->value;
